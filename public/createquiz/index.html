@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz - Valgo Quiz</title>
+  <!-- Updated Spline script to latest version -->
+  <script type="module" src="https://unpkg.com/@splinetool/viewer/build/spline-viewer.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+    
+    body {
+      background-color: #000;
+      color: white;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .container {
+      display: flex;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .left-section {
+      width: 50%;
+      padding: 40px;
+      background-color: rgba(0, 0, 0, 0.5);
+      position: relative;
+      z-index: 2;
+    }
+    
+    .right-section {
+      width: 50%;
+      padding: 40px;
+      background-color: rgba(0, 0, 0, 0.5);
+      position: relative;
+      z-index: 2;
+    }
+    
+    h1 {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .welcome-text {
+      font-size: 1.5rem;
+      line-height: 1.5;
+      margin-bottom: 2rem;
+      color: white;
+    }
+    
+    .form-group {
+      margin-bottom: 1.5rem;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: normal;
+      font-size: 1rem;
+      color: white;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 0.8rem;
+      border: 1px solid #444;
+      border-radius: 4px;
+      font-size: 1rem;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+    }
+    
+    input::placeholder {
+      color: #aaa;
+    }
+    
+    .button {
+      background-color: #8b2de3;
+      color: white;
+      padding: 0.8rem;
+      border: none;
+      border-radius: 4px;
+      font-weight: normal;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .button:hover {
+      background-color: #b16ce1;
+    }
+    
+    .required::after {
+      content: " *";
+      color: white;
+    }
+    
+    .example-text {
+      display: block;
+      color: #ccc;
+      font-size: 0.9rem;
+      margin-top: 0.3rem;
+    }
+    
+    #spline-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      z-index: 0;
+      overflow: hidden;
+    }
+    
+    spline-viewer {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <!-- Updated Spline container with additional attributes -->
+  <div id="spline-container">
+    <spline-viewer 
+      url="https://prod.spline.design/bI4nLFBh5a4yYBwP/scene.splinecode" 
+      loading-anim
+      events-target="global"
+      zoom="0.97"
+    ></spline-viewer>
+  </div>
+
+  <div class="container">
+    <div class="left-section">
+      <h1>The Brain!</h1>
+      <p class="welcome-text">
+        Welcome to The Brain! Our AI quiz generator creates personalized quizzes to challenge your knowledge in any subject.
+        <br><br>
+        Let's begin!!
+      </p>
+    </div>
+    
+    <div class="right-section">
+      <form id="quiz-form" onsubmit="return false">
+        <div class="form-group">
+          <label for="quiz-subject" class="required">Subject</label>
+          <input type="text" id="quiz-subject" placeholder="" required>
+          <span class="example-text">Eg: Biology</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="quiz-topic" class="required">Topic</label>
+          <input type="text" id="quiz-topic" placeholder="" required>
+          <span class="example-text">Eg: Photosynthesis</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="num-questions" class="required">Number of Questions</label>
+          <input type="number" id="num-questions" min="1" max="50" value="10">
+          <span class="example-text">Eg: 10</span>
+        </div>
+        
+        <div class="form-group">
+          <label for="quiz-difficulty">Difficulty</label>
+          <select id="quiz-difficulty">
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <button type="button" id="generate-button" class="button">Create Quiz</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Add event listener to ensure Spline is loaded properly
+      const splineViewer = document.querySelector('spline-viewer');
+      
+      splineViewer.addEventListener('load', function() {
+        console.log('Spline scene loaded successfully');
+      });
+      
+      splineViewer.addEventListener('error', function(e) {
+        console.error('Error loading Spline scene:', e);
+      });
+      
+      // Existing quiz generation code
+      const generateButton = document.getElementById('generate-button');
+      
+      generateButton.addEventListener('click', async function() {
+        // Check if fields are filled
+        const subject = document.getElementById('quiz-subject').value;
+        const topic = document.getElementById('quiz-topic').value;
+        
+        if (!subject || !topic) {
+          alert('Please fill in all required fields');
+          return;
+        }
+        
+        // Show loading state
+        const submitButton = this;
+        const originalButtonText = submitButton.textContent;
+        submitButton.textContent = 'Generating...';
+        submitButton.disabled = true;
+        
+        // Get remaining form values
+        const difficulty = document.getElementById('quiz-difficulty').value;
+        const numQuestions = document.getElementById('num-questions').value;
+        
+        // Create prompt for OpenRouter
+        const prompt = `Create a ${difficulty} level quiz about ${topic} in the subject of ${subject} with ${numQuestions} questions and answers.
+        The title of the quiz is "${subject}: ${topic}".
+
+        IMPORTANT: Respond ONLY with a JSON object. Do not add any explanatory text before or after the JSON.
+        The response must be valid parsable JSON with this exact structure:
+        {
+        "title": "${subject}: ${topic}",
+        "topic": "${topic}",
+        "subject": "${subject}",
+        "difficulty": "${difficulty}",
+        "questions": [
+            {
+            "question": "Question text here",
+            "options": ["Option A", "Option B", "Option C", "Option D"],
+            "correctAnswer": "Correct option here"
+            }
+        ]
+        }`;
+        
+        try {
+          console.log("Sending request to OpenRouter API...");
+          
+          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer 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',
+              'HTTP-Referer': 'http://localhost'
+            },
+            body: JSON.stringify({
+              model: "deepseek/deepseek-chat-v3-0324:free",
+              messages: [
+                {
+                  role: "user",
+                  content: prompt
+                }
+              ],
+              temperature: 0.7,
+              max_tokens: 2000
+            })
+          });
+          
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          
+          console.log("Response received from API");
+          const data = await response.json();
+          console.log("API response data:", data);
+          
+          // Safely parse the content with error handling
+          let quizData;
+          try {
+            const responseContent = data.choices[0].message.content;
+            console.log("Raw response content:", responseContent);
+            
+            // Extract just the JSON part using regex
+            const jsonMatch = responseContent.match(/(\{[\s\S]*\})/);
+            
+            if (jsonMatch && jsonMatch[0]) {
+              // Try to parse the extracted JSON
+              quizData = JSON.parse(jsonMatch[0]);
+              console.log("Parsed quiz data:", quizData);
+            } else {
+              throw new Error("Could not find valid JSON in the response");
+            }
+          } catch (parseError) {
+            console.error('Failed to parse JSON:', data.choices[0].message.content);
+            throw new Error("Failed to parse the API response as JSON");
+          }
+          
+          // Store the quiz data in localStorage
+          localStorage.setItem('currentQuiz', JSON.stringify(quizData));
+          console.log("Quiz data stored in localStorage");
+          
+          // Redirect to the display page
+          window.location.href = 'display-quiz.html';
+          
+        } catch (error) {
+          console.error('Error generating quiz:', error);
+          alert(`Error: ${error.message}. Check console for more details.`);
+          
+          // Reset button
+          submitButton.textContent = originalButtonText;
+          submitButton.disabled = false;
+        }
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz Results</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+    
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+    }
+    
+    header {
+      background-color: #bb86fc;
+      color: #121212;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: #bb86fc;
+      text-align: center;
+    }
+    
+    h2 {
+      font-size: 1.8rem;
+      margin-bottom: 1rem;
+      color: #bb86fc;
+    }
+    
+    .results-container {
+      background-color: #1e1e1e;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .results-summary {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #333;
+      text-align: center;
+    }
+    
+    .charts-container {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #333;
+    }
+
+    @media (max-width: 768px) {
+      .charts-container {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .chart-box {
+      background-color: #252525;
+      padding: 1rem;
+      border-radius: 8px;
+      height: 300px;
+    }
+    
+    .question-details {
+      margin-bottom: 2rem;
+    }
+    
+    .question-item {
+      background-color: #252525;
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+      border-radius: 8px;
+      border-left: 4px solid #444;
+    }
+    
+    .question-item.correct {
+      border-left-color: #28a745;
+    }
+    
+    .question-item.incorrect {
+      border-left-color: #dc3545;
+    }
+    
+    .answer-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    @media (max-width: 500px) {
+      .answer-comparison {
+        grid-template-columns: 1fr;
+      }
+    }
+    
+    .selected-answer, .correct-answer {
+      padding: 0.8rem;
+      border-radius: 4px;
+    }
+    
+    .selected-answer {
+      background-color: rgba(187, 134, 252, 0.1);
+      border: 1px solid #bb86fc;
+    }
+    
+    .correct-answer {
+      background-color: rgba(40, 167, 69, 0.1);
+      border: 1px solid #28a745;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 1rem;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-left: 0.5rem;
+    }
+    
+    .badge-correct {
+      background-color: #28a745;
+      color: white;
+    }
+    
+    .badge-incorrect {
+      background-color: #dc3545;
+      color: white;
+    }
+    
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+    
+    .button {
+      background-color: #bb86fc;
+      color: #121212;
+      padding: 0.8rem 1.8rem;
+      border: none;
+      border-radius: 50px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(187, 134, 252, 0.3);
+      transition: transform 0.3s, box-shadow 0.3s;
+      display: inline-block;
+      text-decoration: none;
+      text-align: center;
+    }
+    
+    .button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(187, 134, 252, 0.5);
+      background-color: #a370dd;
+    }
+    
+    .button-secondary {
+      background-color: transparent;
+      border: 2px solid #bb86fc;
+      color: #bb86fc;
+    }
+    
+    .button-secondary:hover {
+      background-color: rgba(187, 134, 252, 0.1);
+    }
+    
+    .score-highlight {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #bb86fc;
+      margin: 1rem 0;
+    }
+    
+    .meta-info {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin: 1rem 0;
+      flex-wrap: wrap;
+    }
+    
+    .meta-item {
+      background-color: #252525;
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+    }
+
+    .certificate {
+      text-align: center;
+      margin: 2rem 0;
+      padding: 2rem;
+      border: 2px dashed #bb86fc;
+      border-radius: 8px;
+    }
+
+    .certificate h2 {
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Quiz Results Analysis</h1>
+    
+    <div class="results-container">
+      <div class="results-summary" id="results-summary">
+        <h2 id="quiz-title">Loading results...</h2>
+        <div class="meta-info" id="quiz-meta"></div>
+        <div class="score-highlight" id="score"></div>
+      </div>
+
+      <div class="charts-container">
+        <div class="chart-box">
+          <canvas id="scoreChart"></canvas>
+        </div>
+        <div class="chart-box">
+          <canvas id="questionsBreakdownChart"></canvas>
+        </div>
+      </div>
+
+      <div class="certificate" id="certificate">
+        <h2>Certificate of Completion</h2>
+        <p>This is to certify that you have successfully completed the quiz</p>
+        <p id="cert-name">Quiz Title</p>
+        <p id="cert-score">with a score of 0%</p>
+        <p id="cert-date">Date: </p>
+      </div>
+      
+      <h2>Question Details</h2>
+      <div class="question-details" id="question-details">
+        <!-- Question details will be inserted here by JavaScript -->
+      </div>
+      
+      <div class="actions">
+        <a href="../createquiz/display-quiz.html" class="button button-secondary">Return to Quiz</a>
+        <a href="../createquiz/index.html" class="button">Create New Quiz</a>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("Results page loaded");
+      
+      // Get quiz results from localStorage
+      let resultsData;
+      try {
+        const storedData = localStorage.getItem('quizResults');
+        console.log("Retrieved from localStorage:", storedData);
+        
+        if (!storedData) {
+          throw new Error("No results data found");
+        }
+        
+        resultsData = JSON.parse(storedData);
+        console.log("Results data parsed:", resultsData);
+      }
+      catch (error) {
+        console.error("Error loading results data:", error);
+        document.getElementById('results-summary').innerHTML = `
+          <h2>Error Loading Results</h2>
+          <p>No quiz results were found. Please try taking a quiz first.</p>
+        `;
+        return;
+      }
+      
+      // Display results summary
+      document.getElementById('quiz-title').textContent = resultsData.title;
+      document.getElementById('quiz-meta').innerHTML = `
+        <div class="meta-item">Topic: ${resultsData.topic}</div>
+        <div class="meta-item">Difficulty: ${resultsData.difficulty}</div>
+        <div class="meta-item">Questions: ${resultsData.totalQuestions}</div>
+      `;
+      document.getElementById('score').textContent = `${resultsData.scorePercent}%`;
+      
+      // Update certificate
+      document.getElementById('cert-name').textContent = resultsData.title;
+      document.getElementById('cert-score').textContent = `with a score of ${resultsData.scorePercent}%`;
+      document.getElementById('cert-date').textContent = `Date: ${new Date().toLocaleDateString()}`;
+      
+      // Display detailed question results
+      const questionDetailsContainer = document.getElementById('question-details');
+      
+      resultsData.detailedResults.forEach(question => {
+        const questionElement = document.createElement('div');
+        questionElement.className = `question-item ${question.isCorrect ? 'correct' : 'incorrect'}`;
+        
+        questionElement.innerHTML = `
+          <h3>Question ${question.questionNumber} 
+            <span class="badge ${question.isCorrect ? 'badge-correct' : 'badge-incorrect'}">
+              ${question.isCorrect ? 'Correct' : 'Incorrect'}
+            </span>
+          </h3>
+          <p>${question.questionText}</p>
+          
+          <div class="answer-comparison">
+            <div class="selected-answer">
+              <strong>Your Answer:</strong><br>
+              ${question.selectedAnswer}
+            </div>
+            <div class="correct-answer">
+              <strong>Correct Answer:</strong><br>
+              ${question.correctAnswer}
+            </div>
+          </div>
+        `;
+        
+        questionDetailsContainer.appendChild(questionElement);
+      });
+      
+      // Create score chart
+      const scoreCtx = document.getElementById('scoreChart').getContext('2d');
+      new Chart(scoreCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Correct', 'Incorrect'],
+          datasets: [{
+            data: [
+              resultsData.correctAnswers, 
+              resultsData.totalQuestions - resultsData.correctAnswers
+            ],
+            backgroundColor: [
+              'rgba(40, 167, 69, 0.7)',
+              'rgba(220, 53, 69, 0.7)'
+            ],
+            borderColor: [
+              'rgba(40, 167, 69, 1)',
+              'rgba(220, 53, 69, 1)'
+            ],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Overall Score',
+              color: '#e0e0e0',
+              font: {
+                size: 16
+              }
+            },
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#e0e0e0'
+              }
+            }
+          }
+        }
+      });
+      
+      // Create questions breakdown chart
+      // Group questions by their index (correct/incorrect per question number)
+      const questionsData = Array(resultsData.totalQuestions).fill(0);
+      resultsData.detailedResults.forEach(item => {
+        if (item.isCorrect) {
+          questionsData[item.questionNumber - 1] = 1;
+        }
+      });
+      
+      const questionLabels = [];
+      for (let i = 1; i <= resultsData.totalQuestions; i++) {
+        questionLabels.push(`Q${i}`);
+      }
+      
+      const questionsCtx = document.getElementById('questionsBreakdownChart').getContext('2d');
+      new Chart(questionsCtx, {
+        type: 'bar',
+        data: {
+          labels: questionLabels,
+          datasets: [{
+            label: 'Question Results',
+            data: questionsData,
+            backgroundColor: questionsData.map(val => 
+              val === 1 ? 'rgba(40, 167, 69, 0.7)' : 'rgba(220, 53, 69, 0.7)'
+            ),
+            borderColor: questionsData.map(val => 
+              val === 1 ? 'rgba(40, 167, 69, 1)' : 'rgba(220, 53, 69, 1)'
+            ),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: 1,
+              ticks: {
+                stepSize: 1,
+                color: '#e0e0e0',
+                callback: function(value) {
+                  return value === 0 ? 'Incorrect' : 'Correct';
+                }
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              }
+            },
+            x: {
+              ticks: {
+                color: '#e0e0e0'
+              },
+              grid: {
+                color: 'rgba(255, 255, 255, 0.1)'
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Questions Breakdown',
+              color: '#e0e0e0',
+              font: {
+                size: 16
+              }
+            },
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  return context.raw === 1 ? 'Correct' : 'Incorrect';
+                }
+              }
+            }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
