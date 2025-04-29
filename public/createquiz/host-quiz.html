@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Host Quiz</title>
+  <script src="https://unpkg.com/peerjs@1.4.7/dist/peerjs.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Arial', sans-serif;
+    }
+    
+    body {
+      background-color: #121212;
+      color: #e0e0e0;
+      background-image: url('../assets/bg.png');
+      background-size: cover;
+      background-position: center center;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+    }
+    
+    header {
+      background-color: #bb86fc;
+      color: #121212;
+      padding: 1.5rem;
+      text-align: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 2rem;
+    }
+    
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 1.5rem;
+      color: #bb86fc;
+      text-align: center;
+    }
+    
+    .quiz-container {
+      background-color: #1e1e1e;
+      padding: 2rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    
+    .quiz-info {
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid #333;
+    }
+    
+    .question {
+      margin-bottom: 2rem;
+      padding: 1.5rem;
+      border: 1px solid #333;
+      border-radius: 8px;
+      background-color: #252525;
+    }
+    
+    .question h3 {
+      margin-bottom: 1rem;
+      color: #bb86fc;
+    }
+    
+    .options {
+      list-style-type: none;
+    }
+    
+    .option {
+      padding: 1rem;
+      margin-bottom: 0.5rem;
+      border: 1px solid #444;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    
+    .button {
+      background-color: #bb86fc;
+      color: #121212;
+      padding: 0.8rem 1.8rem;
+      border: none;
+      border-radius: 50px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(187, 134, 252, 0.3);
+      transition: transform 0.3s, box-shadow 0.3s;
+      margin-top: 1rem;
+      display: inline-block;
+      text-decoration: none;
+    }
+    
+    .button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(187, 134, 252, 0.5);
+      background-color: #a370dd;
+    }
+    
+    .connection-panel {
+      background-color: #252525;
+      padding: 1.5rem;
+      border-radius: 8px;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    
+    .connection-code {
+      font-size: 2.5rem;
+      color: #bb86fc;
+      margin: 1rem 0;
+      padding: 0.5rem;
+      background-color: #333;
+      border-radius: 8px;
+      display: inline-block;
+      min-width: 200px;
+    }
+    
+    .qr-code {
+      margin: 1rem auto;
+      max-width: 200px;
+      height: auto;
+    }
+    
+    .participants {
+      padding: 1rem;
+      margin-top: 1rem;
+      background-color: #333;
+      border-radius: 8px;
+      max-height: 150px;
+      overflow-y: auto;
+    }
+    
+    .participant {
+      padding: 0.5rem;
+      margin-bottom: 0.25rem;
+      border-bottom: 1px solid #444;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .nav-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 1rem;
+    }
+    
+    .progress {
+      background-color: #333;
+      border-radius: 10px;
+      height: 10px;
+      width: 100%;
+      margin: 1rem 0;
+    }
+    
+    .progress-bar {
+      background-color: #bb86fc;
+      height: 10px;
+      border-radius: 10px;
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>QuizAI Host</h1>
+  </header>
+  
+  <div class="container">
+    <div class="connection-panel">
+      <h2>Connection Information</h2>
+      <p>Share this code with participants to join your quiz:</p>
+      <div class="connection-code" id="connection-code">Generating...</div>
+      
+      <div class="participants">
+        <h3>Participants (<span id="participant-count">0</span>)</h3>
+        <div id="participant-list"></div>
+      </div>
+    </div>
+    
+    <div class="quiz-container">
+      <div class="quiz-info">
+        <h2 id="quiz-title">Loading Quiz...</h2>
+        <p id="quiz-meta"></p>
+        <div class="progress">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+      </div>
+      
+      <div id="questions-container"></div>
+      
+      <div class="nav-controls">
+        <button id="prev-question" class="button">Previous</button>
+        <span id="question-nav">Question 1 of X</span>
+        <button id="next-question" class="button">Next</button>
+      </div>
+      
+      <div class="actions" style="margin-top: 2rem;">
+        <a href="display-quiz.html" class="button">Back to Quiz</a>
+        <button id="show-answers" class="button">Show Answers</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("Host quiz page loaded");
+      
+      // Initialize PeerJS
+      const peer = new Peer();
+      const connections = [];
+      let quizData;
+      let currentQuestionIndex = 0;
+      let totalQuestions = 0;
+      
+      // Get quiz data from localStorage
+      try {
+        const storedData = localStorage.getItem('currentQuiz');
+        if (!storedData) {
+          throw new Error("No quiz data found");
+        }
+        
+        quizData = JSON.parse(storedData);
+        
+        // Normalize the data structure to ensure consistency
+        if (!quizData.question && quizData.questions) {
+          quizData.question = quizData.questions;
+        } else if (!quizData.question && !quizData.questions) {
+          throw new Error("Invalid quiz format: no questions found");
+        }
+        
+        totalQuestions = quizData.question.length;
+      } catch (error) {
+        console.error("Error loading quiz data:", error);
+        document.getElementById('quiz-title').textContent = "Error Loading Quiz";
+        document.getElementById('quiz-meta').textContent = "Please go back and try creating a new quiz";
+        return;
+      }
+      
+      // Display quiz info
+      document.getElementById('quiz-title').textContent = quizData.title;
+      document.getElementById('quiz-meta').textContent = 
+        `Topic: ${quizData.topic} | Difficulty: ${quizData.difficulty} | ${quizData.question.length} Questions`;
+      document.getElementById('question-nav').textContent = `Question 1 of ${totalQuestions}`;
+      
+      // Generate questions but only show the first one
+      const questionsContainer = document.getElementById('questions-container');
+      
+      quizData.question.forEach((question, index) => {
+        const questionElement = document.createElement('div');
+        questionElement.className = 'question';
+        questionElement.dataset.correctAnswer = question.correctAnswer;
+        questionElement.style.display = index === 0 ? 'block' : 'none';
+        
+        // Normalize options
+        let optionsToDisplay = [];
+        if (Array.isArray(question.options)) {
+          optionsToDisplay = question.options;
+        } else if (Array.isArray(question.option)) {
+          optionsToDisplay = question.option;
+        } else {
+          console.warn(`Question ${index+1} has no valid options array`);
+          optionsToDisplay = [];
+        }
+        
+        questionElement.innerHTML = `
+          <h3>Question ${index + 1}: ${question.question}</h3>
+          <ul class="options">
+            ${optionsToDisplay.map(option => `
+              <li class="option" data-option="${option}">${option}</li>
+            `).join('')}
+          </ul>
+        `;
+        
+        questionsContainer.appendChild(questionElement);
+      });
+      
+      // PeerJS connection
+      peer.on('open', function(id) {
+        console.log('My peer ID is: ' + id);
+        document.getElementById('connection-code').textContent = id;
+      });
+      
+      peer.on('connection', function(conn) {
+        console.log("New connection:", conn.peer);
+        connections.push(conn);
+        
+        // Add participant to list
+        const participantElement = document.createElement('div');
+        participantElement.className = 'participant';
+        participantElement.id = `participant-${conn.peer}`;
+        participantElement.innerHTML = `
+          <span class="participant-name">Player ${connections.length}</span>
+          <span class="participant-status">Connected</span>
+        `;
+        document.getElementById('participant-list').appendChild(participantElement);
+        document.getElementById('participant-count').textContent = connections.length;
+        
+        // Setup connection events
+        conn.on('data', function(data) {
+          console.log("Received data:", data);
+          
+          if (data.type === 'join') {
+            // Update participant name
+            const participantEl = document.getElementById(`participant-${conn.peer}`);
+            if (participantEl) {
+              participantEl.querySelector('.participant-name').textContent = data.name || `Player ${connections.length}`;
+            }
+          } else if (data.type === 'answer') {
+            // Handle answer data
+            const participantEl = document.getElementById(`participant-${conn.peer}`);
+            if (participantEl) {
+              const isCorrect = data.answer === quizData.question[data.questionIndex].correctAnswer;
+              participantEl.querySelector('.participant-status').textContent = 
+                isCorrect ? '✓ Correct' : '✗ Incorrect';
+              participantEl.querySelector('.participant-status').style.color = 
+                isCorrect ? '#98FB98' : '#FFA07A';
+            }
+          }
+        });
+        
+        conn.on('close', function() {
+          console.log("Connection closed:", conn.peer);
+          // Remove participant from list
+          document.getElementById(`participant-${conn.peer}`)?.remove();
+          // Remove from connections array
+          const index = connections.findIndex(c => c.peer === conn.peer);
+          if (index !== -1) connections.splice(index, 1);
+          document.getElementById('participant-count').textContent = connections.length;
+        });
+        
+        // Send initial quiz data
+        conn.send({
+          type: 'init',
+          title: quizData.title,
+          topic: quizData.topic,
+          difficulty: quizData.difficulty,
+          totalQuestions: totalQuestions,
+          currentQuestion: currentQuestionIndex
+        });
+        
+        // Send the current question
+        sendQuestionToParticipants(currentQuestionIndex);
+      });
+      
+      // Question navigation
+      document.getElementById('next-question').addEventListener('click', function() {
+        if (currentQuestionIndex < totalQuestions - 1) {
+          // Hide current question
+          document.querySelectorAll('.question')[currentQuestionIndex].style.display = 'none';
+          
+          // Show next question
+          currentQuestionIndex++;
+          document.querySelectorAll('.question')[currentQuestionIndex].style.display = 'block';
+          
+          // Update navigation text
+          document.getElementById('question-nav').textContent = 
+            `Question ${currentQuestionIndex + 1} of ${totalQuestions}`;
+          
+          // Update progress bar
+          updateProgressBar();
+          
+          // Send question to all participants
+          sendQuestionToParticipants(currentQuestionIndex);
+          
+          // Reset participant statuses
+          document.querySelectorAll('.participant-status').forEach(el => {
+            el.textContent = 'Connected';
+            el.style.color = '#e0e0e0';
+          });
+        }
+      });
+      
+      document.getElementById('prev-question').addEventListener('click', function() {
+        if (currentQuestionIndex > 0) {
+          // Hide current question
+          document.querySelectorAll('.question')[currentQuestionIndex].style.display = 'none';
+          
+          // Show previous question
+          currentQuestionIndex--;
+          document.querySelectorAll('.question')[currentQuestionIndex].style.display = 'block';
+          
+          // Update navigation text
+          document.getElementById('question-nav').textContent = 
+            `Question ${currentQuestionIndex + 1} of ${totalQuestions}`;
+          
+          // Update progress bar
+          updateProgressBar();
+          
+          // Send question to all participants
+          sendQuestionToParticipants(currentQuestionIndex);
+          
+          // Reset participant statuses
+          document.querySelectorAll('.participant-status').forEach(el => {
+            el.textContent = 'Connected';
+            el.style.color = '#e0e0e0';
+          });
+        }
+      });
+      
+      document.getElementById('show-answers').addEventListener('click', function() {
+        const showingAnswers = this.textContent === 'Show Answers';
+        
+        if (showingAnswers) {
+          // Show answer for current question
+          const currentQuestion = document.querySelectorAll('.question')[currentQuestionIndex];
+          const correctAnswer = currentQuestion.dataset.correctAnswer;
+          
+          currentQuestion.querySelectorAll('.option').forEach(option => {
+            if (option.dataset.option === correctAnswer) {
+              option.style.backgroundColor = 'rgba(40, 167, 69, 0.2)';
+              option.style.borderColor = '#28a745';
+            }
+          });
+          
+          // Send the answer to participants
+          connections.forEach(conn => {
+            conn.send({
+              type: 'showAnswer',
+              questionIndex: currentQuestionIndex,
+              correctAnswer: correctAnswer
+            });
+          });
+          
+          this.textContent = 'Hide Answers';
+        } else {
+          // Hide answers
+          const currentQuestion = document.querySelectorAll('.question')[currentQuestionIndex];
+          
+          currentQuestion.querySelectorAll('.option').forEach(option => {
+            option.style.backgroundColor = '';
+            option.style.borderColor = '#444';
+          });
+          
+          // Tell participants to hide answers
+          connections.forEach(conn => {
+            conn.send({
+              type: 'hideAnswer',
+              questionIndex: currentQuestionIndex
+            });
+          });
+          
+          this.textContent = 'Show Answers';
+        }
+      });
+      
+      function sendQuestionToParticipants(questionIndex) {
+        const question = quizData.question[questionIndex];
+        
+        // Normalize options
+        let options = [];
+        if (Array.isArray(question.options)) {
+          options = question.options;
+        } else if (Array.isArray(question.option)) {
+          options = question.option;
+        }
+        
+        connections.forEach(conn => {
+          conn.send({
+            type: 'question',
+            questionIndex: questionIndex,
+            questionText: question.question,
+            options: options
+          });
+        });
+      }
+      
+      function updateProgressBar() {
+        const progressPercent = ((currentQuestionIndex + 1) / totalQuestions) * 100;
+        document.getElementById('progress-bar').style.width = `${progressPercent}%`;
+      }
+      
+      // Initial progress bar setup
+      updateProgressBar();
+    });
+  </script>
+</body>
+</html>

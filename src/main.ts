@@ -47,12 +47,50 @@ if (root) {
       .feature-card p {
         color: #b0b0b0;
       }
+      
+      .button-container {
+        display: flex;
+        gap: 20px;
+        justify-content: center;
+      }
+      
+      .cta {
+        background-color: #bb86fc;
+        color: #121212;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 50px;
+        font-weight: bold;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.3s, background-color 0.3s, box-shadow 0.3s;
+        box-shadow: 0 4px 15px rgba(187, 134, 252, 0.3);
+      }
+      
+      .cta:hover {
+        transform: translateY(-3px);
+        background-color: #a370dd;
+        box-shadow: 0 6px 20px rgba(187, 134, 252, 0.5);
+      }
+      
+      .cta.secondary {
+        background-color: transparent;
+        border: 2px solid #bb86fc;
+        color:rgb(124, 53, 210);
+      }
+      
+      .cta.secondary:hover {
+        background-color: rgba(187, 134, 252, 0.1);
+      }
     </style>
     <div class="landing-bg">
       <header class="header">
         <h1 class="title">QuizYay</h1>
         <p class="subtitle">Create engaging quizzes instantly with the power of AI.</p>
-        <button class="cta">Start Quiz</button>
+        <div class="button-container">
+          <button class="cta">Start Quiz</button>
+          <button class="cta secondary" id="join-quiz">Join Quiz</button>
+        </div>
       </header>
       <main>
         <section class="features">
@@ -78,6 +116,14 @@ if (root) {
   if (startQuizButton) {
     startQuizButton.addEventListener('click', () => {
       window.location.href = 'createquiz/index.html';
+    });
+  }
+  
+  // Add click event listener to the Join Quiz button
+  const joinQuizButton = root.querySelector('#join-quiz');
+  if (joinQuizButton) {
+    joinQuizButton.addEventListener('click', () => {
+      window.location.href = 'createquiz/join-quiz.html';
     });
   }
 

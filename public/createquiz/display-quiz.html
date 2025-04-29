@@ -153,6 +153,7 @@
       
       <div class="actions">
         <button id="check-answers" class="button">Check Answers</button>
+        <a href="host-quiz.html" id="host-quiz-btn" class="button">Host Quiz</a>
         <a href="index.html" class="button">Create Another Quiz</a>
       </div>
       
@@ -320,6 +321,18 @@
       // Add event listener for the Show Detailed Results button
       document.getElementById('show-detailed-results').addEventListener('click', function() {
         window.location.href = '../result/index.html';
+      });
+      
+      // Host quiz button event listener
+      document.getElementById('host-quiz-btn').addEventListener('click', function(e) {
+        e.preventDefault();
+        // Make sure quiz data is saved
+        if (!localStorage.getItem('currentQuiz')) {
+          alert("Quiz data not found. Please create or load a quiz first.");
+          return;
+        }
+        // Redirect to host page
+        window.location.href = 'host-quiz.html';
       });
     });
   </script>
