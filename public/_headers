@@ -1,0 +1,9 @@
+/*
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+
+/*.ts
+  Content-Type: application/javascript
+  
+/*.tsx
+  Content-Type: application/javascript
