@@ -128,6 +128,27 @@
       width: 100%;
       height: 100%;
     }
+
+    /* Styling for the censorship warning */
+    .censorship-warning {
+      background-color: rgba(255, 77, 77, 0.2);
+      border: 1px solid #ff4d4d;
+      border-radius: 4px;
+      padding: 12px;
+      margin-top: 1rem;
+      color: #ff4d4d;
+      display: none;
+    }
+    
+    .censorship-warning.show {
+      display: block;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
   </style>
 </head>
 <body>
@@ -165,6 +186,12 @@
           <span class="example-text">Eg: Photosynthesis</span>
         </div>
         
+        <!-- Add the censorship warning message -->
+        <div id="censorship-warning" class="censorship-warning">
+          <strong>Warning:</strong> The topic you've entered contains sensitive content that is not allowed. 
+          Please choose a different topic.
+        </div>
+        
         <div class="form-group">
           <label for="num-questions" class="required">Number of Questions</label>
           <input type="number" id="num-questions" min="1" max="50" value="10">
@@ -187,7 +214,10 @@
     </div>
   </div>
   
-  <script>
+  <script type="module">
+    // Import API configuration from our utility
+    import { getApiKey, API_ENDPOINTS, API_HEADERS, checkForCensoredContent } from '/src/apiConfig.ts';
+    
     document.addEventListener('DOMContentLoaded', function() {
       // Add event listener to ensure Spline is loaded properly
       const splineViewer = document.querySelector('spline-viewer');
@@ -199,6 +229,35 @@
       splineViewer.addEventListener('error', function(e) {
         console.error('Error loading Spline scene:', e);
       });
+      
+      // Real-time content filtering for topic field
+      const topicInput = document.getElementById('quiz-topic');
+      const subjectInput = document.getElementById('quiz-subject');
+      const censorshipWarning = document.getElementById('censorship-warning');
+      
+      // Check for sensitive content on input
+      const checkForSensitiveContent = () => {
+        const subject = subjectInput.value.trim();
+        const topic = topicInput.value.trim();
+        
+        if (!subject && !topic) return;
+        
+        const combinedText = `${subject} ${topic}`;
+        const { isCensored, censoredTopics } = checkForCensoredContent(combinedText);
+        
+        if (isCensored) {
+          censorshipWarning.classList.add('show');
+          censorshipWarning.innerHTML = `<strong>Warning:</strong> Your content contains sensitive topic(s): 
+            "${censoredTopics.join(', ')}". Please choose a different topic.`;
+          generateButton.disabled = true;
+        } else {
+          censorshipWarning.classList.remove('show');
+          generateButton.disabled = false;
+        }
+      };
+      
+      topicInput.addEventListener('input', checkForSensitiveContent);
+      subjectInput.addEventListener('input', checkForSensitiveContent);
       
       // Existing quiz generation code
       const generateButton = document.getElementById('generate-button');
@@ -213,6 +272,17 @@
           return;
         }
         
+        // Check for censored content again before submitting
+        const combinedText = `${subject} ${topic}`;
+        const { isCensored, censoredTopics } = checkForCensoredContent(combinedText);
+        
+        if (isCensored) {
+          censorshipWarning.classList.add('show');
+          censorshipWarning.innerHTML = `<strong>Warning:</strong> Your content contains sensitive topic(s): 
+            "${censoredTopics.join(', ')}". Please choose a different topic.`;
+          return;
+        }
+        
         // Show loading state
         const submitButton = this;
         const originalButtonText = submitButton.textContent;
@@ -223,11 +293,15 @@
         const difficulty = document.getElementById('quiz-difficulty').value;
         const numQuestions = document.getElementById('num-questions').value;
         
-        // Create prompt for OpenRouter
+        // Create prompt for OpenRouter with safety guidelines
         const prompt = `Create a ${difficulty} level quiz about ${topic} in the subject of ${subject} with ${numQuestions} questions and answers.
         The title of the quiz is "${subject}: ${topic}".
-
-        IMPORTANT: Respond ONLY with a JSON object. Do not add any explanatory text before or after the JSON.
+        
+        IMPORTANT GUIDELINES:
+        1. Do not include any content about reproduction, sex, sexuality, violence, drugs, or other sensitive topics.
+        2. Keep the content educational and appropriate for all ages.
+        3. Respond ONLY with a JSON object. Do not add any explanatory text before or after the JSON.
+        
         The response must be valid parsable JSON with this exact structure:
         {
         "title": "${subject}: ${topic}",
@@ -246,12 +320,14 @@
         try {
           console.log("Sending request to OpenRouter API...");
           
-          const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          // Get the API key securely from our utility
+          const API_KEY = getApiKey();
+          
+          const response = await fetch(API_ENDPOINTS.OPENROUTER, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              'Authorization': 'Bearer ',
-              'HTTP-Referer': 'http://localhost'
+              ...API_HEADERS,
+              'Authorization': `Bearer ${API_KEY}`
             },
             body: JSON.stringify({
               model: "deepseek/deepseek-chat-v3-0324:free",
@@ -293,6 +369,15 @@
           } catch (parseError) {
             console.error('Failed to parse JSON:', data.choices[0].message.content);
             throw new Error("Failed to parse the API response as JSON");
+          }
+          
+          // Perform a final check on the generated content to ensure it doesn't have censored topics
+          const quizContent = JSON.stringify(quizData);
+          const contentCheck = checkForCensoredContent(quizContent);
+          
+          if (contentCheck.isCensored) {
+            console.error('Generated quiz contains censored content:', contentCheck.censoredTopics);
+            throw new Error(`The AI generated inappropriate content. Please try again with a different topic.`);
           }
           
           // Store the quiz data in localStorage
