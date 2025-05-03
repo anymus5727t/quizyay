@@ -12,7 +12,9 @@ export default {
         displayQuiz: './public/createquiz/display-quiz.html',
         joinQuiz: './public/createquiz/join-quiz.html',
         result: './public/result/index.html'
-      }
+      },
+      // Add external to exclude certain imports from being processed by Rollup
+      external: ['/apiConfig.js']
     }
   }
 }
