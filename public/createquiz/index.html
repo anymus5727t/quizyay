@@ -215,8 +215,8 @@
   </div>
   
   <script type="module">
-    // Import API configuration from our utility
-    import { getApiKey, API_ENDPOINTS, API_HEADERS, checkForCensoredContent } from '/src/apiConfig.ts';
+    // Import API configuration from our utility (using JS version instead of TS)
+    import { getApiKey, API_ENDPOINTS, API_HEADERS, checkForCensoredContent } from '/apiConfig.js';
     
     document.addEventListener('DOMContentLoaded', function() {
       // Add event listener to ensure Spline is loaded properly

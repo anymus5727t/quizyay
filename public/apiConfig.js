@@ -2,7 +2,7 @@
 // This file centralizes API key management
 
 // Get API keys from environment variables
-export const getApiKey = (): string => {
+export const getApiKey = () => {
   const apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
   
   if (!apiKey) {
@@ -39,9 +39,10 @@ export const CENSORED_TOPICS = [
   // Other potentially sensitive topics
   'religion', 'politics', 'gambling', 'alcohol'
 ];
-export const checkForCensoredContent = (text: string): { isCensored: boolean; censoredTopics: string[] } => {
+
+export const checkForCensoredContent = (text) => {
   const lowerText = text.toLowerCase();
-  const foundTopics: string[] = [];
+  const foundTopics = [];
   
   for (const topic of CENSORED_TOPICS) {
     // Check if the text contains the censored topic as a whole word
